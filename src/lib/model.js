@@ -210,3 +210,25 @@ export function calcFatGoal({ weight, fatPct, targetFatPct, dailyDeficit }) {
 export const GOAL_TYPES = ["ダイエット", "筋力アップ", "絞る", "健康維持", "その他"];
 export const fmt1 = v => (v == null || isNaN(v) ? "—" : Number(v).toFixed(1));
 export const fmt0 = v => (v == null || isNaN(v) ? "—" : Math.round(v));
+
+// 1日の目標: 設定ページの基本計算（減量カロリー等）から自動決定。プロフィール未入力時は既定値
+export function getDailyTargets(profile, settings) {
+  const c = calcProfile(profile || {});
+  return {
+    kcal: c.cut ?? settings?.targetKcal ?? 1800,
+    p: c.protein ?? settings?.targetP ?? 90,
+    f: c.fat ?? settings?.targetF ?? 50,
+    c: c.carb ?? settings?.targetC ?? 220,
+  };
+}
+
+// PFCバランス（カロリー比%）P4/F9/C4
+export function pfcBalance(t) {
+  const pk = (t.protein || 0) * 4, fk = (t.fat || 0) * 9, ck = (t.carb || 0) * 4;
+  const total = pk + fk + ck;
+  if (total <= 0) return null;
+  return {
+    pKcal: Math.round(pk), fKcal: Math.round(fk), cKcal: Math.round(ck),
+    pPct: Math.round(pk / total * 100), fPct: Math.round(fk / total * 100), cPct: Math.round(ck / total * 100),
+  };
+}

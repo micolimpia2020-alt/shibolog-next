@@ -1,6 +1,6 @@
 {
   "appId": "com.shibolog.next",
-  "appName": "しぼログNEXT",
+  "appName": "しぼログPRO",
   "webDir": "dist",
   "server": { "androidScheme": "https" }
 }

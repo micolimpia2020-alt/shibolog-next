@@ -171,7 +171,7 @@ export default function App() {
       )}
       {tab === "meals" && (
         <Meals date={date} setDate={switchDate} day={day} mode={mode} markedDates={markedDates}
-          mymeals={mymeals} updateDay={updateDay} onOpenMeal={setDetailId} onAddMeal={addMeal}
+          mymeals={mymeals} profile={profile} settings={settings} updateDay={updateDay} onOpenMeal={setDetailId} onAddMeal={addMeal}
           onAddMyMealToToday={addMyMealToToday}
           onRemoveMyMeal={id => setMymeals(mymeals.filter(t => t.id !== id))} />
       )}
