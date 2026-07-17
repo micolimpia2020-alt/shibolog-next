@@ -1,0 +1,27 @@
+import { C } from "../theme.js";
+import { WD, weekOf, parseKey, dateKey, addDays } from "../lib/model.js";
+
+export default function WeekStrip({ date, setDate, mode, markedDates }) {
+  const today = dateKey();
+  const nav = (n) => ({ border: "none", cursor: "pointer", background: C.dim, borderRadius: 10, color: C.text, fontWeight: 800, fontSize: 14, padding: "0 8px", alignSelf: "stretch" });
+  return (
+    <div style={{ display: "flex", gap: 4, marginBottom: 16, alignItems: "stretch" }}>
+      <button aria-label="前の週" onClick={() => setDate(addDays(date, -7))} style={nav()}>‹</button>
+      {weekOf(date).map((k, i) => {
+        const sel = k === date;
+        return (
+          <button key={k} onClick={() => setDate(k)}
+            style={{ flex: 1, border: "none", cursor: "pointer", background: sel ? C.card : "transparent", borderRadius: 12, padding: "8px 0", boxShadow: sel ? "0 1px 4px rgba(74,70,63,0.1)" : "none" }}>
+            <div style={{ fontSize: 11, color: C.muted }}>{WD[i]}</div>
+            <div style={{
+              margin: "4px auto 0", width: 32, height: 32, lineHeight: "30px", borderRadius: "50%",
+              border: `1.5px solid ${sel ? mode.accent : C.border}`, fontWeight: k === today ? 800 : 600,
+              color: C.text, background: markedDates?.has(k) ? `${mode.accent}26` : "transparent", fontSize: 14,
+            }}>{parseKey(k).getDate()}</div>
+          </button>
+        );
+      })}
+      <button aria-label="次の週" onClick={() => setDate(addDays(date, 7))} style={nav()}>›</button>
+    </div>
+  );
+}

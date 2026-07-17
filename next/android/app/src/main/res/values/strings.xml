@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">しぼログNEXT</string>
+    <string name="title_activity_main">しぼログNEXT</string>
+    <string name="package_name">com.shibolog.next</string>
+    <string name="custom_url_scheme">com.shibolog.next</string>
+</resources>
