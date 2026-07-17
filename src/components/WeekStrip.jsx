@@ -1,10 +1,12 @@
 import { C } from "../theme.js";
-import { WD, weekOf, parseKey, dateKey } from "../lib/model.js";
+import { WD, weekOf, parseKey, dateKey, addDays } from "../lib/model.js";
 
 export default function WeekStrip({ date, setDate, mode, markedDates }) {
   const today = dateKey();
+  const nav = (n) => ({ border: "none", cursor: "pointer", background: C.dim, borderRadius: 10, color: C.text, fontWeight: 800, fontSize: 14, padding: "0 8px", alignSelf: "stretch" });
   return (
-    <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+    <div style={{ display: "flex", gap: 4, marginBottom: 16, alignItems: "stretch" }}>
+      <button aria-label="前の週" onClick={() => setDate(addDays(date, -7))} style={nav()}>‹</button>
       {weekOf(date).map((k, i) => {
         const sel = k === date;
         return (
@@ -19,6 +21,7 @@ export default function WeekStrip({ date, setDate, mode, markedDates }) {
           </button>
         );
       })}
+      <button aria-label="次の週" onClick={() => setDate(addDays(date, 7))} style={nav()}>›</button>
     </div>
   );
 }

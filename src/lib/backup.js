@@ -10,6 +10,15 @@ export async function collectBackupData() {
   data.profile  = await kvGet(K.profile, null);
   data.settings = await kvGet(K.settings, null);
   data.mymeals  = await kvGet(K.mymeals, null);
+  data.goal     = await kvGet(K.goal, null);
+  data.fatgoal  = await kvGet(K.fatgoal, null);
+  // 週振り返り
+  data.weekly = {};
+  for (const k of await kvKeys()) {
+    if (typeof k === "string" && k.startsWith("slnx_week:")) {
+      data.weekly[k.slice(10)] = await kvGet(k, null);
+    }
+  }
   data.days = {};
   for (const date of await listDayDates()) {
     const day = await loadDayLean(date);
@@ -53,7 +62,17 @@ function v3FullKeyToDate(fullKey) {
 export function convertV3(data) {
   const out = { __version: BACKUP_VERSION, __convertedFrom: "shibolog_v3", days: {} };
   if (data.profile) {
-    out.profile = { height: data.profile.height || "", weight: data.profile.weight || "", age: "", sex: "", activity: "", maintenance: data.profile.maintenance || "" };
+    out.profile = { height: data.profile.height || "", weight: data.profile.weight || "", fatPct: data.profile.fatPct || "", age: "", sex: "", activity: "", maintenance: data.profile.maintenance || "" };
+  }
+  if (data.fatgoal) out.fatgoal = { targetFatPct: data.fatgoal.targetFatPct || "", dailyDeficit: data.fatgoal.dailyDeficit || "" };
+  if (data.goal) out.goal = { type: data.goal.type || "", targetNum: data.goal.targetNum || "", targetLook: data.goal.targetLook || "", targetDate: data.goal.targetDate || "", refPhoto: data.goal.refPhoto || null };
+  // 週振り返り（v3: weeks[].reflection → 月曜キー）
+  out.weekly = {};
+  for (const w of data.weeks || []) {
+    if (w.reflection && w.mondayFull) {
+      const [y, m2, d2] = String(w.mondayFull).split("-").map(Number);
+      if (y && m2 && d2) out.weekly[`${y}-${String(m2).padStart(2,"0")}-${String(d2).padStart(2,"0")}`] = { reflection: w.reflection };
+    }
   }
   for (const w of data.weeks || []) {
     for (const d of w.days || []) {
@@ -66,6 +85,7 @@ export function convertV3(data) {
       day.condition.mood = d.mood || "";
       day.training = d.training || day.training;
       day.note = d.note || "";
+      day.schedule = d.schedule || "";
       day.meals = (d.meals || []).map(m => ({
         id: "m_v3_" + (m.id || Math.random().toString(36).slice(2)),
         time: m.time || "", name: m.name || "",
@@ -86,6 +106,11 @@ export async function restoreBackupData(raw) {
   if (data.profile)  await kvSet(K.profile, data.profile);
   if (data.settings) await kvSet(K.settings, data.settings);
   if (data.mymeals)  await kvSet(K.mymeals, data.mymeals);
+  if (data.goal)     await kvSet(K.goal, data.goal);
+  if (data.fatgoal)  await kvSet(K.fatgoal, data.fatgoal);
+  for (const [mon, v] of Object.entries(data.weekly || {})) {
+    if (v) await kvSet(`slnx_week:${mon}`, v);
+  }
 
   for (const [date, day] of Object.entries(data.days || {})) {
     // 写真を分離して保存
@@ -125,7 +150,7 @@ export async function resetAll() {
   for (const k of keys) {
     if (k === K.safetyBackup) continue;
     if (k === K.meta) continue;
-    if (typeof k === "string" && (k.startsWith(DAY_PREFIX) || [K.profile, K.settings, K.mymeals].includes(k))) {
+    if (typeof k === "string" && (k.startsWith(DAY_PREFIX) || k.startsWith("slnx_week:") || [K.profile, K.settings, K.mymeals, K.goal, K.fatgoal].includes(k))) {
       await kvDel(k);
     }
   }

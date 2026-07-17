@@ -15,12 +15,14 @@ export const K = {
   profile:  "slnx_profile",
   settings: "slnx_settings",
   mymeals:  "slnx_mymeals",
+  goal:     "slnx_goal",
+  fatgoal:  "slnx_fatgoal",
   safetyBackup: "slnx_safety_backup",
   day: (date) => `slnx_day:${date}`,   // date = "YYYY-MM-DD"
 };
 export const DAY_PREFIX = "slnx_day:";
 
-const MIRROR = new Set([K.meta, K.profile, K.settings, K.mymeals]);
+const MIRROR = new Set([K.meta, K.profile, K.settings, K.mymeals, K.fatgoal]);
 
 let dbPromise = null;
 function openDb() {

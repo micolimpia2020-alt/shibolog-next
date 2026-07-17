@@ -148,3 +148,65 @@ export function calcStreak(markedDates, today = dateKey()) {
   while (markedDates.has(cur)) { n += 1; cur = addDays(cur, -1); }
   return n;
 }
+
+// ─── トレーニング: 部位（旧しぼログ準拠）と推定1RM ───
+export const TRAINING_PARTS = ["Push", "Pull", "Leg", "胸", "背中", "肩", "腕・二頭", "腕・三頭", "脚", "腹", "臀部"];
+// O'Conner式: 1RM = 重量 × (1 + 回数 ÷ 40)
+export function oneRM(weight, reps) {
+  const w = parseFloat(weight), r = parseFloat(reps);
+  if (!w || !r || w <= 0 || r <= 0) return null;
+  return Math.round(w * (1 + r / 40) * 10) / 10;
+}
+export function normalizeParts(parts) {
+  if (Array.isArray(parts)) return parts;
+  if (!parts) return [];
+  return String(parts).split(/[・、,\s\/]+/).filter(Boolean);
+}
+
+// ═══ 旧しぼログ(v3) 計算式（無改変で移植） ═══
+export function calcProfile({ height, weight, fatPct, maintenance }) {
+  const h = parseFloat(height), w = parseFloat(weight),
+        f = parseFloat(fatPct), m = parseFloat(maintenance);
+  if (!h || !w) return {};
+  const bmi = w / ((h / 100) ** 2);
+  const lbm = !isNaN(f) ? w * (1 - f / 100) : null;
+  const fatKg = !isNaN(f) ? w * (f / 100) : null;
+  const tdee = (!isNaN(m) && m > 0) ? m : (10 * w + 6.25 * h - 5 * 30 + 5) * 1.55;
+  const cut = Math.round(tdee - 500);
+  const maintain = Math.round(tdee);
+  const bulk = Math.round(tdee + 300);
+  const protein = lbm ? Math.round(lbm * 2.2) : Math.round(w * 2);
+  const fat2 = Math.round((cut * 0.25) / 9);
+  const carb = Math.round((cut - protein * 4 - fat2 * 9) / 4);
+  const goalWeight = lbm ? Math.round(lbm / 0.85 * 10) / 10 : null;
+  return { bmi, lbm, fatKg, tdee, cut, maintain, bulk, protein, fat: fat2, carb, goalWeight };
+}
+
+export function calcFatGoal({ weight, fatPct, targetFatPct, dailyDeficit }) {
+  const w = parseFloat(weight), f = parseFloat(fatPct),
+        tf = parseFloat(targetFatPct), dd = parseFloat(dailyDeficit);
+  const errors = [];
+  if (!w || w <= 0) errors.push("体重は0より大きい数値を入力してください");
+  if (!f || f <= 0 || f >= 100) errors.push("現在の体脂肪率は0〜100の間で入力してください");
+  if (errors.length) return { errors };
+  if (!tf || tf <= 0 || tf >= f) {
+    const fatKg = w * (f / 100);
+    return { errors: [], partial: true,
+      fatKg, lbm: w - fatKg, fatPerPct: fatKg / f,
+      needFatLoss: null, totalDeficit: null, days: null, weeks: null };
+  }
+  const fatKg = w * (f / 100);
+  const lbm = w - fatKg;
+  const fatPerPct = fatKg / f;
+  const needFatLoss = (f - tf) * fatPerPct;
+  const totalDeficit = needFatLoss * 7200;
+  const days = (dd && dd > 0) ? totalDeficit / dd : null;
+  const weeks2 = days != null ? days / 7 : null;
+  const goalWeight = lbm / (1 - tf / 100);
+  const diffKg = w - goalWeight;
+  return { errors: [], partial: false, fatKg, lbm, fatPerPct, needFatLoss, totalDeficit, days, weeks: weeks2, goalWeight, diffKg };
+}
+
+export const GOAL_TYPES = ["ダイエット", "筋力アップ", "絞る", "健康維持", "その他"];
+export const fmt1 = v => (v == null || isNaN(v) ? "—" : Number(v).toFixed(1));
+export const fmt0 = v => (v == null || isNaN(v) ? "—" : Math.round(v));
