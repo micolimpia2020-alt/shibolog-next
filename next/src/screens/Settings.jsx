@@ -87,16 +87,7 @@ export default function Settings({ profile, setProfile, settings, setSettings, g
             <Stat l="維持" v={calc.maintain} u="kcal" />
             <Stat l="増量" v={calc.bulk} u="kcal" />
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", borderTop: `1px solid ${C.dim}` }}>
-            <Stat l="タンパク質" v={calc.protein} u="g" color={C.p} />
-            <Stat l="脂質" v={calc.fat} u="g" color={C.f} />
-            <Stat l="炭水化物" v={calc.carb} u="g" color={C.c} />
-            {calc.goalWeight != null && <Stat l="目標体重(15%)" v={fmt1(calc.goalWeight)} u="kg" color={C.green} />}
-          </div>
-          <button onClick={() => setS({ targetKcal: calc.cut, targetP: calc.protein, targetF: calc.fat, targetC: calc.carb })}
-            style={btnGhost(mode.accent, { width: "100%", marginTop: 8 })}>
-            💡 この計算結果を1日の目標に反映する
-          </button>
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>減量カロリーとPFCは自動でダッシュボード・食事の目標に反映されます。</div>
         </div>
       )}
 
@@ -117,17 +108,6 @@ export default function Settings({ profile, setProfile, settings, setSettings, g
             <Stat l="あと" v={"−" + fmt1(fat.diffKg)} u="kg" color={mode.accent} />
           </div>
         )}
-      </div>
-
-      {/* 1日の目標 */}
-      <div style={card({ marginBottom: 12 })}>
-        <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 10 }}>🍽️ 1日の目標（ホームのリング）</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <Field label="摂取カロリー (kcal)" color={C.accent}><input type="number" inputMode="numeric" value={settings.targetKcal} style={inp()} onChange={e => setS({ targetKcal: +e.target.value || 0 })} /></Field>
-          <Field label="タンパク質 (g)" color={C.p}><input type="number" inputMode="numeric" value={settings.targetP} style={inp()} onChange={e => setS({ targetP: +e.target.value || 0 })} /></Field>
-          <Field label="脂質 (g)" color={C.f}><input type="number" inputMode="numeric" value={settings.targetF} style={inp()} onChange={e => setS({ targetF: +e.target.value || 0 })} /></Field>
-          <Field label="炭水化物 (g)" color={C.c}><input type="number" inputMode="numeric" value={settings.targetC} style={inp()} onChange={e => setS({ targetC: +e.target.value || 0 })} /></Field>
-        </div>
       </div>
 
       {/* モード（テーマカラー） */}

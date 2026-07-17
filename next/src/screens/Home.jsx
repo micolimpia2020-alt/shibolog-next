@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { C, card, inp } from "../theme.js";
 import { Field } from "../components/ui.jsx";
 import LineChart from "../components/LineChart.jsx";
-import { WD, dateKey, parseKey, addDays, dayTotals, calcStreak, calcProfile, calcFatGoal, fmt1 } from "../lib/model.js";
+import { WD, dateKey, parseKey, addDays, dayTotals, calcProfile, calcFatGoal, fmt1 } from "../lib/model.js";
 import { listDayDates, loadDayLean } from "../lib/storage.js";
 
 function mondayOf(key) {
@@ -87,7 +87,6 @@ export default function Home({ date, setDate, day, settings, profile, fatgoal, m
     return null;
   }, [allMerged]);
   const diffKg = latestMorning != null && goalWeight != null ? Math.max(0, latestMorning - goalWeight) : null;
-  const streak = calcStreak(markedDates);
   const todayBody = (date === today ? day?.body : allMerged[today]?.body) || {};
 
   const setTodayBody = p => updateDay({ body: { ...(day?.body || {}), ...p } });
@@ -96,10 +95,6 @@ export default function Home({ date, setDate, day, settings, profile, fatgoal, m
     <div style={{ padding: "16px 16px 120px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <div style={{ fontSize: 20, fontWeight: 800, color: C.text }}>ダッシュボード</div>
-        <div style={{ display: "flex", gap: 6 }}>
-          {streak > 0 && <div style={{ fontSize: 12, fontWeight: 800, color: "#c47b4b", background: "#f9efe6", border: `1px solid ${C.border}`, borderRadius: 20, padding: "5px 10px" }}>🔥 {streak}日連続</div>}
-          <div style={{ fontSize: 12, fontWeight: 800, color: mode.accent, background: mode.soft, border: `1px solid ${mode.accent}44`, borderRadius: 20, padding: "5px 10px" }}>{mode.icon} {mode.label}</div>
-        </div>
       </div>
 
       {/* 今日の体重入力 */}

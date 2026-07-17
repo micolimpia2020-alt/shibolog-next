@@ -2,7 +2,10 @@ import { useState, useRef } from "react";
 import { C, card, inp, btn, btnGhost } from "../theme.js";
 import { EstBadge, Field } from "../components/ui.jsx";
 import WeekStrip from "../components/WeekStrip.jsx";
-import { parseKey, dateKey, dayTotals, mealTotals, emptyMeal } from "../lib/model.js";
+import { parseKey, dateKey, dayTotals, mealTotals, emptyMeal, pfcBalance, nowHM } from "../lib/model.js";
+import { Sheet } from "../components/ui.jsx";
+import { searchRecipes, sortByFit } from "../lib/recipes.js";
+import { getDailyTargets } from "../lib/model.js";
 
 const MACROS = [
   { key: "kcal", label: "カロリー (kcal)", color: C.accent },
@@ -11,9 +14,12 @@ const MACROS = [
   { key: "carb", label: "C 炭水化物 (g)", color: C.c },
 ];
 
-export default function Meals({ date, setDate, day, mode, markedDates, mymeals, updateDay, onOpenMeal, onAddMyMealToToday, onRemoveMyMeal, onAddMeal }) {
+export default function Meals({ date, setDate, day, mode, markedDates, mymeals, profile, settings, updateDay, onOpenMeal, onAddMeal, onAddMyMealToToday, onRemoveMyMeal }) {
   const [form, setForm] = useState(emptyMeal);
   const [showMy, setShowMy] = useState(false);
+  const [showRec, setShowRec] = useState(false);
+  const [recQuery, setRecQuery] = useState("");
+  const [recTag, setRecTag] = useState("");
   const photoRef = useRef();
   const d = parseKey(date);
   const totals = dayTotals(day);
@@ -116,11 +122,105 @@ export default function Meals({ date, setDate, day, mode, markedDates, mymeals, 
                 <span style={{ color: C.f }}> F{Math.round(t.fat)}</span>
                 <span style={{ color: C.c }}> C{Math.round(t.carb)}</span>
               </div>
+              {(() => { const b = pfcBalance(t); return b ? (
+                <div style={{ fontSize: 11, fontWeight: 700, marginTop: 2 }}>
+                  <span style={{ color: C.p }}>P{b.pPct}%</span>
+                  <span style={{ color: C.f }}> F{b.fPct}%</span>
+                  <span style={{ color: C.c }}> C{b.cPct}%</span>
+                </div>
+              ) : null; })()}
             </div>
             <div style={{ color: C.muted }}>›</div>
           </button>
         );
       })}
+
+      {/* 食事終了 */}
+      {meals.length > 0 && (
+        <button onClick={() => updateDay({ mealsDone: !day?.mealsDone })}
+          style={btn(day?.mealsDone ? C.muted : mode.accent, { width: "100%", marginBottom: 10 })}>
+          {day?.mealsDone ? "🔓 食事記録を再開する" : "🍽️ 食事終了（今日のまとめを見る）"}
+        </button>
+      )}
+      {day?.mealsDone && (() => {
+        const b = pfcBalance(totals);
+        return (
+          <div style={card({ marginBottom: 12, border: `1.5px solid ${mode.accent}66` })}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: mode.accent, marginBottom: 8 }}>📊 今日の食事まとめ</div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: C.text, marginBottom: 8 }}>
+              合計 {Math.round(totals.kcal)} <span style={{ fontSize: 13 }}>kcal</span>
+            </div>
+            {b && (<>
+              <div style={{ display: "flex", textAlign: "center", marginBottom: 8 }}>
+                {[["P タンパク質", b.pKcal, b.pPct, C.p], ["F 脂質", b.fKcal, b.fPct, C.f], ["C 炭水化物", b.cKcal, b.cPct, C.c]].map(([l, k, pct, col]) => (
+                  <div key={l} style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, color: col, fontWeight: 700 }}>{l}</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>{k}<span style={{ fontSize: 10 }}>kcal</span></div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: col }}>{pct}%</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", height: 10, borderRadius: 5, overflow: "hidden" }}>
+                <div style={{ width: `${b.pPct}%`, background: C.p }} />
+                <div style={{ width: `${b.fPct}%`, background: C.f }} />
+                <div style={{ width: `${b.cPct}%`, background: C.c }} />
+              </div>
+            </>)}
+          </div>
+        );
+      })()}
+
+      {/* メニュー提案 */}
+      <button onClick={() => setShowRec(true)}
+        style={{ ...card({ width: "100%", textAlign: "left", cursor: "pointer", marginBottom: 12, background: mode.soft, border: `1.5px solid ${mode.accent}66` }) }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: mode.accent }}>🍳 食事メニュー提案</div>
+        <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>残りカロリーに合うヘルシーメニューを食材から探せます →</div>
+      </button>
+
+      {showRec && (() => {
+        const tg = getDailyTargets(profile, settings);
+        const remain = Math.round(tg.kcal - totals.kcal);
+        const list = sortByFit(searchRecipes(recQuery, recTag), remain);
+        return (
+          <Sheet onClose={() => setShowRec(false)} title="🍳 食事メニュー提案">
+            <div style={{ background: mode.soft, borderRadius: 12, padding: "10px 14px", marginBottom: 10, fontSize: 13, fontWeight: 700, color: C.text }}>
+              今日の残り: <b style={{ color: mode.accent }}>{remain}</b> kcal
+            </div>
+            <input type="text" placeholder="食材で検索（例: 鶏むね、卵、オートミール）" value={recQuery}
+              onChange={e => setRecQuery(e.target.value)} style={inp({ marginBottom: 8 })} />
+            <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+              {[["", "すべて"], ["home", "🏠 おうちごはん"], ["trainee", "💪 トレーニー"]].map(([k, l]) => (
+                <button key={k} onClick={() => setRecTag(k)}
+                  style={{ flex: 1, padding: "8px 4px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1.5px solid ${recTag === k ? mode.accent : C.border}`, background: recTag === k ? mode.soft : "#fff", color: recTag === k ? mode.accent : C.muted }}>{l}</button>
+              ))}
+            </div>
+            {list.length === 0 && <div style={{ fontSize: 13, color: C.muted, textAlign: "center", padding: 16 }}>該当するメニューがありません</div>}
+            {list.map(r => {
+              const over = r.kcal > remain;
+              return (
+                <div key={r.id} style={card({ marginBottom: 10, padding: 14, opacity: over ? 0.75 : 1 })}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{r.name}</div>
+                  <div style={{ fontSize: 12, color: mode.accent, fontWeight: 700, margin: "2px 0 4px" }}>💡 {r.point}</div>
+                  <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>
+                    <b style={{ color: over ? C.red : C.text }}>{r.kcal}kcal</b>
+                    <span style={{ color: C.p }}> P{r.p}</span>
+                    <span style={{ color: C.f }}> F{r.f}</span>
+                    <span style={{ color: C.c }}> C{r.c}</span>
+                    {over && <span style={{ color: C.red, fontWeight: 700 }}>（残りオーバー）</span>}
+                  </div>
+                  <div style={{ fontSize: 12, color: C.text, marginBottom: 4 }}>{r.ingredients.join("・")}</div>
+                  {r.steps.map((s, i) => <div key={i} style={{ fontSize: 11, color: C.muted, lineHeight: 1.7 }}>{i + 1}. {s}</div>)}
+                  <button onClick={() => {
+                    onAddMeal({ ...emptyMeal(), id: "m_" + Date.now().toString(36), time: nowHM(), name: r.name,
+                      totals: { kcal: String(r.kcal), protein: String(r.p), fat: String(r.f), carb: String(r.c), fiber: "", salt: "" } });
+                    setShowRec(false);
+                  }} style={btn(mode.accent, { width: "100%", marginTop: 8, padding: "10px" })}>＋ この食事を記録する</button>
+                </div>
+              );
+            })}
+          </Sheet>
+        );
+      })()}
 
       {/* 本日のメモ */}
       <div style={card({ marginTop: 4 })}>
