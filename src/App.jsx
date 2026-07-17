@@ -4,16 +4,20 @@ import { K, kvGet, kvSet, saveDay, loadDay, listDayDates } from "./lib/storage.j
 import { autoDailyBackup } from "./lib/backup.js";
 import { dateKey, emptyDay, DEFAULT_SETTINGS, nowHM, pickPraise } from "./lib/model.js";
 import Home from "./screens/Home.jsx";
+import Meals from "./screens/Meals.jsx";
+import Training from "./screens/Training.jsx";
+import Calendar from "./screens/Calendar.jsx";
 import AddMeal from "./screens/AddMeal.jsx";
 import MealDetail from "./screens/MealDetail.jsx";
 import Condition from "./screens/Condition.jsx";
-import MyMeals from "./screens/MyMeals.jsx";
 import Settings from "./screens/Settings.jsx";
 
 const TABS = [
-  { id: "home", label: "ホーム", icon: "🏠" },
-  { id: "condition", label: "体調", icon: "📋" },
-  { id: "mymeals", label: "マイミール", icon: "⭐" },
+  { id: "home", label: "ダッシュボード", icon: "📊" },
+  { id: "meals", label: "食事", icon: "🍽️" },
+  { id: "training", label: "トレーニング", icon: "💪" },
+  { id: "records", label: "記録", icon: "📋" },
+  { id: "calendar", label: "カレンダー", icon: "📅" },
   { id: "settings", label: "設定", icon: "⚙️" },
 ];
 
@@ -136,8 +140,8 @@ export default function App() {
       photo: null, photoId: null, source: "mymeal", estimated: false, userNote: "",
     };
     updateDay({ meals: [...(day?.meals || []), meal] });
-    setTab("home");
-  }, [day, updateDay]);
+    showPraise("meal");
+  }, [day, updateDay, showPraise]);
 
   if (!ready) {
     return <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", color: C.muted, fontFamily: "'Hiragino Sans','Yu Gothic',sans-serif" }}>読み込み中…</div>;
@@ -163,21 +167,30 @@ export default function App() {
 
       {tab === "home" && (
         <Home date={date} setDate={switchDate} day={day} settings={settings} mode={mode}
-          markedDates={markedDates} onOpenMeal={setDetailId} />
+          markedDates={markedDates} />
       )}
-      {tab === "condition" && (
+      {tab === "meals" && (
+        <Meals date={date} setDate={switchDate} day={day} mode={mode} markedDates={markedDates}
+          mymeals={mymeals} onOpenMeal={setDetailId} onAddMyMealToToday={addMyMealToToday}
+          onRemoveMyMeal={id => setMymeals(mymeals.filter(t => t.id !== id))} />
+      )}
+      {tab === "training" && (
+        <Training date={date} setDate={switchDate} day={day} mode={mode} markedDates={markedDates}
+          updateDay={updateDay} onPraise={showPraise} />
+      )}
+      {tab === "records" && (
         <Condition date={date} day={day} settings={settings} mode={mode} updateDay={updateDay} onPraise={showPraise} />
       )}
-      {tab === "mymeals" && (
-        <MyMeals mymeals={mymeals} onAddToToday={addMyMealToToday}
-          onRemove={id => setMymeals(mymeals.filter(t => t.id !== id))} />
+      {tab === "calendar" && (
+        <Calendar mode={mode} markedDates={markedDates}
+          onJump={k => { switchDate(k); setTab("home"); }} />
       )}
       {tab === "settings" && (
         <Settings profile={profile} setProfile={setProfile} settings={settings} setSettings={setSettings} mode={mode} />
       )}
 
       {/* ＋ FAB */}
-      {(tab === "home") && (
+      {(tab === "home" || tab === "meals") && (
         <button onClick={() => setShowAdd(true)}
           style={{ position: "fixed", right: 20, bottom: 90, width: 62, height: 62, borderRadius: "50%", border: "none", cursor: "pointer", background: mode.accent, color: "#fff", fontSize: 30, boxShadow: "0 4px 14px rgba(40,35,25,0.3)", zIndex: 40 }}>＋</button>
       )}
@@ -188,13 +201,13 @@ export default function App() {
           <button key={t.id} onClick={() => setTab(t.id)}
             style={{ flex: 1, border: "none", background: "none", cursor: "pointer", padding: "10px 0 12px", color: tab === t.id ? C.text : C.muted }}>
             <div style={{ fontSize: 20 }}>{t.icon}</div>
-            <div style={{ fontSize: 10, fontWeight: tab === t.id ? 800 : 500 }}>{t.label}</div>
+            <div style={{ fontSize: 9, fontWeight: tab === t.id ? 800 : 500, letterSpacing: "-0.02em" }}>{t.label}</div>
           </button>
         ))}
       </div>
 
       {/* シート */}
-      {showAdd && <AddMeal onClose={() => setShowAdd(false)} onSave={addMeal} mymeals={mymeals} />}
+      {showAdd && <AddMeal onClose={() => setShowAdd(false)} onSave={addMeal} mymeals={mymeals} mode={mode} />}
       {detailMeal && (
         <MealDetail meal={detailMeal} onClose={() => setDetailId(null)}
           onUpdate={updateMeal} onDelete={deleteMeal} onSaveMyMeal={saveMyMeal} />
